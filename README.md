@@ -21,7 +21,9 @@ Dans le cadre d'un projet de conception et développement d'une base de données
 
 ### A — Contraintes additionnelles
 
-Sois concis, donne ta réponse sous la forme règles métier et dictionnaire de données. Précise la nature des données. Récupère tes informations dans les références données uniquement.
+Sois concis, donne ta réponse sous la forme règles métier et dictionnaire de données. Précise la nature des données. Récupère tes informations dans les références données uniquement. Pour toute les clés assure toi 
+que la clé est de la forme nomclé_nomentité. Fournis nous uniquement les clés essentielles de la table. 
+Fournis nous 15 entités et associations. 
 
 
 ### R — Références
@@ -56,44 +58,55 @@ Fournis les règles métier et le dictionnaire de données issue de ton analyse 
 
 ## 1. Règles métier
 
-Dans ce modèle, un **match** est une rencontre entre deux équipes ; une **manche** est une partie jouée dans ce match. Le calendrier officiel distingue les compétitions, leurs phases, les dates, les équipes, les scores et les formats tels que Bo3 et Bo5. Les règlements de Riot traitent notamment des effectifs et de l’éligibilité des joueurs. :chatgpt-content-reference{index="0"}
+Les références distinguent les compétitions régionales et internationales, leurs phases, ainsi que des rencontres en **Bo1, Bo3 ou Bo5**. Le calendrier affiche les équipes, les dates et les scores ; Riot publie aussi des informations sur les effectifs et les lieux d’événements. Les règles ci-dessous traduisent ces informations en **choix de modélisation** pour le projet, sans supposer que tous les détails sont publiés pour chaque rencontre. :chatgpt-content-reference{index="0"}
 
-1. Une région peut organiser plusieurs compétitions ; une compétition régionale appartient à une région. Une compétition internationale réunit des équipes de plusieurs régions et n’est rattachée à aucune région unique.
-2. Une compétition possède des éditions datées. Chaque édition comporte une ou plusieurs phases ; une phase peut être une sous-phase d’une autre phase de la **même édition**.
-3. Un match appartient à une phase et oppose exactement deux équipes distinctes. Une équipe peut disputer plusieurs matchs, y compris contre la même équipe.
-4. Un match possède une date et une heure prévues, un fuseau horaire et un statut. Son lieu physique peut être inconnu ou sans objet. Une modification du calendrier conserve la nouvelle date prévue.
-5. Le format d’un match fixe le nombre maximal de manches prévues. Une manche est identifiée par son numéro **à l’intérieur de son match** ; elle ne peut exister sans ce match.
-6. Une manche jouée oppose les deux équipes du match et possède une équipe gagnante. Pour un match terminé normalement, le score de chaque équipe est le nombre de manches qu’elle a gagnées ; l’équipe ayant atteint le nombre de victoires requis gagne le match. Un forfait ou une annulation exige un statut distinct afin de ne pas inventer des manches jouées.
-7. Un joueur peut appartenir à plusieurs équipes **à des périodes différentes**. Ses périodes d’appartenance à deux équipes ne peuvent pas se chevaucher si le projet retient une appartenance exclusive.
-8. La participation à une manche associe **un joueur, une équipe et une manche**. L’équipe doit être l’une des deux équipes du match, et le joueur doit être éligible dans son effectif à la date de la manche. Chaque équipe aligne cinq joueurs distincts dans une manche effectivement jouée. Les postes sont `TOP`, `JUNGLE`, `MID`, `BOT` et `SUPPORT`. :chatgpt-content-reference{index="1"}
-9. Les noms de ligues, les phases et les formats sont enregistrés par édition ou par match : ils ne sont pas supposés identiques dans toutes les régions ni constants sur dix ans. Le calendrier montre, par exemple, des Bo3 en phase régulière et des Bo5 en playoffs de LEC ; Riot décrit également des phases et qualifications propres aux événements internationaux. :chatgpt-content-reference{index="2"}
+- Une compétition possède des éditions datées. Une édition appartient à une seule compétition et comporte des phases.
+- Une compétition régionale est rattachée à une région ; une compétition internationale peut ne relever d’aucune région unique.
+- Une équipe peut s’inscrire à plusieurs éditions. Une rencontre appartient à une seule phase et oppose **deux équipes distinctes** dès que ses adversaires sont connus.
+- Une rencontre peut être programmée sans adversaires définitifs ni score. Une rencontre terminée possède un score pour chacune de ses deux équipes et un vainqueur unique.
+- Le format d’une rencontre est Bo1, Bo3 ou Bo5. Ses manches portent un numéro unique **dans cette rencontre** ; une manche ne peut exister sans elle.
+- Une manche enregistrée comme terminée a pour vainqueur l’une des deux équipes de sa rencontre. Si les résultats de toutes les manches sont disponibles, leur décompte doit correspondre au score de la rencontre.
+- Un joueur peut être lié successivement à plusieurs équipes par des contrats datés. Pour une manche donnée, son alignement indique **le joueur, l’équipe et la manche** ; cette équipe doit participer à la rencontre.
+- Une rencontre peut avoir un lieu renseigné. Plusieurs rencontres peuvent se tenir au même lieu.
+- Une phase peut précéder une autre phase de la même édition ; une phase ne peut pas se précéder elle-même.
+
+Les exemples de régions, ligues, compétitions internationales et phases figurent dans les pages Riot ; les contraintes de cohérence entre enregistrements sont des règles proposées pour la base étudiante. :chatgpt-content-reference{index="1"}
 
 ## 2. Dictionnaire de données
 
-`PK` désigne un identifiant, `FK` une référence à une autre entité. Les identifiants techniques proposés servent au projet ; ils ne prétendent pas être des identifiants publiés par Riot.
+**Notation :** `PK` = clé primaire ; `FK` = clé étrangère ; `?` = donnée facultative. Une date et une heure de rencontre sont stockées en `TIMESTAMP` avec fuseau horaire. Le modèle compte **9 entités et 6 associations nommées**, soit **15 objets**.
 
-| Entité ou association | Données et nature |
-|---|---|
-| **Région** | `id_region` (PK, entier) ; `nom` (texte). |
-| **Compétition** | `id_competition` (PK, entier) ; `nom` (texte) ; `portee` (énumération : régionale, internationale) ; `id_region` (FK, entier, nul pour une compétition internationale). |
-| **Édition** | `id_edition` (PK, entier) ; `id_competition` (FK) ; `annee` (entier) ; `date_debut`, `date_fin` (dates). |
-| **Phase** | `id_phase` (PK, entier) ; `id_edition` (FK) ; `nom` (texte : saison régulière, playoffs, etc.) ; `id_phase_parente` (FK vers **Phase**, facultative). |
-| **Équipe** | `id_equipe` (PK, entier) ; `nom` (texte) ; `sigle` (texte, facultatif). |
-| **Joueur** | `id_joueur` (PK, entier) ; `pseudo` (texte) ; `nom_public` (texte, facultatif). Le pseudo seul n’est pas une clé fiable sur dix ans. |
-| **Effectif** | `id_joueur` (FK) ; `id_equipe` (FK) ; `date_debut` (date) — **clé composée** ; `date_fin` (date, facultative). Représente l’historique d’appartenance. |
-| **Lieu** | `id_lieu` (PK, entier) ; `nom_site`, `ville`, `pays` (textes). |
-| **Match** | `id_match` (PK, entier) ; `id_phase` (FK) ; `debut_prevu` (date et heure avec fuseau) ; `statut` (énumération : prévu, en cours, terminé, forfait, annulé) ; `format_max_manches` (entier) ; `id_lieu` (FK, facultative). |
-| **Équipe du match** | `id_match` (FK) ; `id_equipe` (FK) — **clé composée**. Exactement deux lignes par match ; pour un forfait, `issue_exceptionnelle` (énumération : victoire, défaite, sans objet, facultative). |
-| **Manche** | `id_match` (FK) ; `numero_manche` (entier positif) — **clé composée** ; `debut_reel` (date et heure avec fuseau, facultatif) ; `statut` (énumération : prévue, en cours, terminée) ; `id_equipe_gagnante` (FK vers Équipe, renseignée à la fin). |
-| **Participation** | `id_match`, `numero_manche` (FK composée vers Manche) ; `id_equipe` (FK) ; `id_joueur` (FK) — **clé composée** ; `poste` (énumération : TOP, JUNGLE, MID, BOT, SUPPORT). Association entre **trois objets métier** : manche, équipe et joueur. |
+| N° | Nature | Entité ou association | Données essentielles et nature |
+|---:|---|---|---|
+| 1 | Entité | **Région** | `id_region` **PK**, entier ; `nom_region`, texte (ex. EMEA). |
+| 2 | Entité | **Compétition** | `id_competition` **PK**, entier ; `nom_competition`, texte ; `portee_competition`, énumération *régionale/internationale*. |
+| 3 | Entité | **Édition** | `id_edition` **PK**, entier ; `id_competition` FK ; `annee_edition`, entier ; `nom_edition`, texte ; `date_debut_edition` et `date_fin_edition`, dates facultatives. |
+| 4 | Entité | **Phase** | `id_phase` **PK**, entier ; `id_edition` FK ; `nom_phase`, texte ; `ordre_phase`, entier facultatif. |
+| 5 | Entité | **Rencontre** | `id_rencontre` **PK**, entier ; `id_phase` FK ; `id_lieu` FK facultative ; `debut_prevu_rencontre`, horodatage avec fuseau ; `format_rencontre`, énumération *Bo1/Bo3/Bo5* ; `statut_rencontre`, énumération *programmée/en cours/terminée*. |
+| 6 | **Entité faible** | **Manche** | **PK composée** : `id_rencontre` FK + `numero_manche`, entier positif ; `id_gagnante_equipe` FK facultative ; `statut_manche`, énumération *prévue/en cours/terminée*. |
+| 7 | Entité | **Lieu** | `id_lieu` **PK**, entier ; `nom_lieu`, texte ; `ville_lieu` et `pays_lieu`, textes facultatifs. |
+| 8 | Entité | **Équipe** | `id_equipe` **PK**, entier ; `nom_equipe`, texte ; `sigle_equipe`, texte facultatif. |
+| 9 | Entité | **Joueur** | `id_joueur` **PK**, entier ; `pseudo_joueur`, texte ; `nom_joueur`, texte facultatif. |
+| 10 | Association | **Rattachement** : compétition–région | **PK composée** : `id_competition` FK + `id_region` FK. Une compétition régionale a exactement un rattachement ; une internationale, aucun. |
+| 11 | Association | **Inscription** : édition–équipe | **PK composée** : `id_edition` FK + `id_equipe` FK. |
+| 12 | Association | **Participation** : rencontre–équipe | **PK composée** : `id_rencontre` FK + `id_equipe` FK ; `score_participation`, entier positif ou nul, facultatif avant le résultat. |
+| 13 | **Association ternaire** | **Alignement** : manche–équipe–joueur | **PK composée** : `id_rencontre` FK + `numero_manche` FK + `id_equipe` FK + `id_joueur` FK ; `role_alignement`, texte facultatif. Le couple (`id_rencontre`, `numero_manche`, `id_joueur`) est unique. |
+| 14 | Association | **Contrat** : joueur–équipe | `id_contrat` **PK**, entier ; `id_joueur` FK ; `id_equipe` FK ; `date_debut_contrat`, date ; `date_fin_contrat`, date facultative. |
+| 15 | **Association récursive** | **Précédence** : phase–phase | **PK composée** : `id_amont_phase` FK + `id_aval_phase` FK. Les deux phases appartiennent à la même édition et sont distinctes. |
 
-Le **score du match** et son **vainqueur normal** sont calculés à partir des manches terminées ; les enregistrer une seconde fois comme faits indépendants créerait un risque de contradiction. Les lieux physiques ne doivent pas être déduits de la région : Riot annonce, par exemple, un site et des dates propres au MSI 2026. :chatgpt-content-reference{index="3"}
+Dans `Alignement`, les deux champs qui identifient la manche forment **ensemble** sa clé étrangère. Les noms des clés suivent la convention demandée : un nom de clé suivi de `_` et du nom de l’entité, y compris pour les rôles `amont` et `aval` de **Phase**.
 
 ## 3. Vérification
 
-Le modèle permet de construire le MCD demandé : **Équipe** et **Joueur** sont des entités fortes ; **Manche** est une entité faible identifiée par `(id_match, numero_manche)` ; **Phase → Phase** est une association récursive ; **Participation(Manche, Équipe, Joueur)** est une association ternaire.
+**Oui, ce dictionnaire permet de construire un MCD répondant aux critères**, sous réserve d’appliquer les règles de cohérence indiquées :
 
-La **3FN se vérifie sur les relations obtenues du MCD**, et non sur le MCD lui-même. Avec les clés indiquées, chaque attribut non clé dépend de la clé de sa relation, sans dépendance transitive volontaire : le nom de région reste dans Région, le lieu dans Lieu, et les informations du joueur dans Joueur. Le score calculé évite une donnée redondante. Les contraintes « deux équipes », « cinq joueurs par équipe et par manche », « équipe gagnante parmi les participantes » et « périodes d’effectif sans chevauchement » devront être contrôlées lors de l’implémentation ; la 3FN, à elle seule, ne les impose pas.
+- **Entités fortes :** notamment `Équipe`, `Joueur` et `Rencontre`, chacune identifiable par sa propre clé.
+- **Entité faible :** `Manche`, identifiée par `id_rencontre` **et** `numero_manche`.
+- **Association n-aire, n > 2 :** `Alignement` relie simultanément une manche, une équipe et un joueur.
+- **Association récursive :** `Précédence` relie deux occurrences distinctes de `Phase`.
+- **3FN :** chaque attribut descriptif est placé auprès de l’objet dont il dépend : la ville dépend du lieu, le format de la rencontre, le score du couple rencontre–équipe, et la date de début d’un contrat particulier. Les noms d’équipes, de joueurs et de compétitions ne sont pas recopiés dans les résultats.
+
+Les dates, lieux, joueurs et résultats **peuvent être conservés** par ce schéma lorsqu’ils sont connus. Le calendrier consulté ne fournit pas systématiquement le détail des manches, des alignements ou du lieu de chaque rencontre : ces données doivent donc rester facultatives tant qu’une source ne les renseigne pas. :chatgpt-content-reference{index="2"}
 
 ## I.C. Règles métier
 
