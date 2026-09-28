@@ -23,6 +23,7 @@ Dans le cadre d'un projet de conception et développement d'une base de données
 
 Sois concis, donne ta réponse sous la forme règles métier et dictionnaire de données. Précise la nature des données. Récupère tes informations dans les références données uniquement. Pour toute les clés assure toi que la clé est de la forme nomclé_nomentité. Fournis nous uniquement les clés essentielles de la table pas de clé facultative. Toute les clés doivent appartenir à une entité ou une association.  
 Fournis nous 15 entités et associations. 
+Ecrit ton résultat au format Markdown afin de pouvoir l'include dans un README.md.
 
 
 ### R — Références
@@ -54,6 +55,9 @@ Cette base doit contenir toute les données fournis.
 Fournis les règles métier et le dictionnaire de données issue de ton analyse ainsi que la vérification afin d'exploiter le résultat dans notre projet étudiant.
 
 ## I.B. Prompt obtenu
+
+https://chatgpt.com/s/t_6aba4217e2b0819197569db95bf0dae1
+
 
 
 ## I.C. Règles métier
