@@ -87,4 +87,4 @@ Organisation d'analyse des compétitions esport mondiales sur League of Legends 
 
 ## Image du MCD
 
-![alt text](image.png)
+![alt text](lol_esport_mcd.jpg)
