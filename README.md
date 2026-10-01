@@ -389,3 +389,6 @@ Clé réelle : le couple (joueur, partie), car un joueur sélectionne exactement
 - [Wikipedia — List of League of Legends leagues and tournaments](https://en.wikipedia.org/wiki/List_of_League_of_Legends_leagues_and_tournaments)
 - [Leaguepedia — exemple de suivi pick &amp; ban et patch par partie (MSI 2025)](https://lol.fandom.com/wiki/2025_Mid-Season_Invitational/Picks_and_Bans)
 
+## MCD
+
+![MCD de la base esport](MCD.png)
