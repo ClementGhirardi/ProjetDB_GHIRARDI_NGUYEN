@@ -1,15 +1,16 @@
-# Premier rendu
+## I. Première étape : analyse des besoins
 
-## Prompt utilisé
+### Prompt utilisé
 
+```
 Tu travailles dans le domaine de l'esport League of Legend. Ton organisation a comme activité d'analyser les compétitions d'esport dans le monde entier sur le jeu vidéo league of Legend. C’est une organisation comme Riot Games, LoL esport. Les données collectées concernent les tournois, équipes, joueurs, champions joués, etc. Inspire-toi du site web suivant : https://www.leagueoflegends.com/fr-fr/.
 Ton organisation veut appliquer MERISE pour concevoir un système d'information. Tu es chargé de la partie analyse, c’est-à-dire de collecter les besoins auprès de l’entreprise. Elle a fait appel à un étudiant en ingénierie informatique pour réaliser ce projet, tu dois lui fournir les informations nécessaires pour qu’il applique ensuite lui-même les étapes suivantes de conception et développement de la base de données. 
 D’abord, établis les règles de gestions des données de ton organisation, sous la forme d'une liste à puce. Elle doit correspondre aux informations que fournit quelqu’un qui connaît le fonctionnement de l’entreprise, mais pas comment se construit un système d’information.
 Ensuite, à partir de ces règles, fournis un dictionnaire de données brutes avec les colonnes suivantes, regroupées dans un tableau : signification de la donnée, type, taille en nombre de caractères ou de chiffres. Il doit y avoir entre 25 et 35 données. Il sert à fournir des informations supplémentaires sur chaque donnée (taille et type) mais sans a priori sur comment les données vont être modélisées ensuite.
 Fournis donc les règles de gestion et le dictionnaire de données.
+```
 
-
-## Ce que l’IA a renvoyé
+### Ce que l’IA a renvoyé
 
 # Analyse MERISE – Système d'information Esport League of Legends
 
@@ -85,6 +86,135 @@ Organisation d'analyse des compétitions esport mondiales sur League of Legends 
 
 *Remarque : ce dictionnaire est « brut » — il décrit les données utiles à l'organisation sans préjuger du modèle conceptuel des données (MCD) qui sera construit par la suite.*
 
-## Image du MCD
+## II. Deuxième étape : MCD
 
-![alt text](lol_esport_mcd.jpg)
+![alt text](imgs/lol_esport_mcd.png)
+*Image du MCD réaliser sur le logiciel Looping*
+
+
+
+## III. Troisième étape : MLD et MPD
+
+![alt text](imgs/lol_esport_mld.png)
+![alt text](imgs/lol_esport_mld_text.png)
+*Image du MLD obtenus grâce au logiciel Looping*
+
+MPD en SQL déduis du MLD : 
+ [1_creation.sql](./1_creation.sql)
+
+Contraintes de validation : 
+ [2_contraintes.sql](./2_contraintes.sql)
+
+## IV. Quatrième étape : insertion des données
+
+### Prompt
+
+```
+Donne les requêtes d’insertion permettant de remplir la base de données dont le modèle relationnel est le suivant : 
+TOURNOI = ([PK] ID_TOURNOI BYTE, NOM_TOURNOI VARCHAR(50), DATE_DEB_TOURNOI DATE, DATE_FIN_TOURNOI DATE, SAISON_TOURNOI VARCHAR(10), REGION_TOURNOI VARCHAR(20), DOTATION BYTE);
+
+EQUIPE = ([PK] ID_EQUIPE BYTE, NOM_EQUIPE VARCHAR(30), TAG_EQUIPE VARCHAR(5));
+
+JOUEUR = ([PK] ID_JOUEUR BYTE, PSEUDO_JOUEUR VARCHAR(16), NOM_JOUEUR VARCHAR(30), PRENOM_JOUEUR VARCHAR(20), DATE_NAISS_JOUEUR DATE, NATIONALITE_JOUEUR VARCHAR(25));
+
+AFFRONTEMENT = ([PK] ID_AFFRONTEMENT BYTE, DATE_HEURE_AFFRONTEMENT DATE, FORMAT_AFFRONTEMENT VARCHAR(3), PHASE_AFFRONTEMENT VARCHAR(15), STATUT_AFFRONTEMENT VARCHAR(10), SCORE_EQUIPE1 BYTE, SCORE_EQUIPE2 BYTE, #ID_TOURNOI);
+
+PARTIE = ([PK] #ID_AFFRONTEMENT, [PK] NUM_PARTIE BYTE, DUREE_PARTIE BYTE);
+
+CHAMPION = ([PK] ID_CHAMPION BYTE, NOM_CHAMPION VARCHAR(25));
+
+AFFECTER = ([PK] #ID_JOUEUR, [PK] #ID_EQUIPE, [PK] DATE_DEB_AFFECT DATE, DATE_FIN_AFFECT DATE, ROLE_JOUEUR VARCHAR(50), STATUT_JOUEUR VARCHAR(50));
+
+PARTICIPER = ([PK] #ID_TOURNOI, [PK] #ID_EQUIPE);
+
+DISPUTER = ([PK] #ID_EQUIPE, [PK] #ID_AFFRONTEMENT, NUM_EQUIPE VARCHAR(50));
+
+EFFECTUER = ([PK] #ID_EQUIPE, [PK] #ID_AFFRONTEMENT, [PK] NUM_PARTIE, [PK] #ID_CHAMPION, NATURE_BAN_PICK VARCHAR(3));
+
+JOUER = ([PK] #ID_JOUEUR, [PK] (#ID_AFFRONTEMENT, NUM_PARTIE), [PK] #ID_CHAMPION, NB_KILLS BYTE, NB_DEATHS BYTE, NB_ASSISTS BYTE);
+
+Remplis la base de donnée en utilisant des données existantes. Il faut :
+- Tout les tournois des deux dernières années (Winter Splits, CBLOL Cup 2026, LCS 2026 Lock-In, First Stand 2026, Spring Splits, Mid-Season Invitational (MSI 2026), Esports World Cup (EWC 2026), Summer Splits, EMEA Masters Summer 2026, League of Legends World Championship (Worlds 2026), Coupe Demacia 2026, Esports Nations Cup 2026)
+- les équipes ayant participé à ces tournois (au moins 20)
+- Tout les joueurs présent dans ces équipes (au moins 100 joueurs)
+- Au moins 10 affrontements par tournoi
+- Toutes les parties que contiennent ces affrontements avec pour chaque partie toutes les données NB_KILLS, NB_DEATHS, NB_ASSISTS, NATURE_BAN_PICK
+- Tout les champions du jeu League of Legends
+Ajoute également quelques données concernant les années précédents 2026 (entre 2020 et 2026). Il ne faut pas plus de 1000 lignes au total.
+
+Les clés étrangères doivent faire référence aux clés primaires existantes : donne les lignes en commençant par remplir les tables dans lesquelles il n'y a pas de clés étrangères, puis les tables dans lesquelles les clés étrangères font références à des clés primaires des tables déjà remplies. 
+
+Les données doivent respecter les contraintes de validation suivantes :
+ALTER TABLE TOURNOI
+    ADD CONSTRAINT CK_TOURNOI_DATES
+    CHECK (DATE_FIN_TOURNOI IS NULL OR DATE_FIN_TOURNOI >= DATE_DEB_TOURNOI);
+
+ALTER TABLE TOURNOI
+    ADD CONSTRAINT CK_TOURNOI_DOTATION
+    CHECK (DOTATION >= 0);
+
+ALTER TABLE EQUIPE
+    ADD CONSTRAINT CK_EQUIPE_TAG
+    CHECK (CHAR_LENGTH(TAG_EQUIPE) BETWEEN 2 AND 5);
+
+ALTER TABLE AFFRONTEMENT
+    ADD CONSTRAINT CK_AFFRONTEMENT_FORMAT
+    CHECK (FORMAT_AFFRONTEMENT IN ('BO1', 'BO3', 'BO5'));
+
+ALTER TABLE AFFRONTEMENT
+    ADD CONSTRAINT CK_AFFRONTEMENT_STATUT
+    CHECK (STATUT_AFFRONTEMENT IN ('PLANIFIE', 'EN_COURS', 'TERMINE'));
+
+ALTER TABLE AFFRONTEMENT
+    ADD CONSTRAINT CK_AFFRONTEMENT_PHASE
+    CHECK (PHASE_AFFRONTEMENT IN ('POULES', 'PLAYOFFS', 'DEMI_FINALE', 'FINALE'));
+
+ALTER TABLE DISPUTER
+    ADD CONSTRAINT CK_DISPUTER_NUM_EQUIPE
+    CHECK (NUM_EQUIPE IN (1, 2));
+
+ALTER TABLE AFFRONTEMENT
+    ADD CONSTRAINT CK_AFFRONTEMENT_SCORES
+    CHECK (SCORE_EQUIPE1 >= 0 AND SCORE_EQUIPE2 >= 0);
+
+ALTER TABLE AFFECTER
+    ADD CONSTRAINT CK_AFFECTER_DATES
+    CHECK (DATE_FIN_AFFECT IS NULL OR DATE_FIN_AFFECT >= DATE_DEB_AFFECT);
+
+ALTER TABLE AFFECTER
+    ADD CONSTRAINT CK_AFFECTER_ROLE
+    CHECK (ROLE_JOUEUR IN ('TOP', 'JUNGLE', 'MID', 'ADC', 'SUPPORT', 'COACH'));
+
+ALTER TABLE AFFECTER
+    ADD CONSTRAINT CK_AFFECTER_STATUT
+    CHECK (STATUT_JOUEUR IN ('ACTIF', 'BANC', 'PARTI'));
+
+ALTER TABLE PARTIE
+    ADD CONSTRAINT CK_PARTIE_NUM
+    CHECK (NUM_PARTIE >= 1);
+
+ALTER TABLE PARTIE
+    ADD CONSTRAINT CK_PARTIE_DUREE
+    CHECK (DUREE_PARTIE > '00:00:00' AND DUREE_PARTIE < '02:00:00');
+
+ALTER TABLE EFFECTUER
+    ADD CONSTRAINT CK_EFFECTUER_NATURE
+    CHECK (NATURE_BAN_PICK IN ('BAN', 'PICK'));
+
+
+ALTER TABLE EFFECTUER
+    ADD CONSTRAINT UQ_CHAMPION_PARTIE
+        UNIQUE (ID_AFFRONTEMENT, NUM_PARTIE, ID_CHAMPION);
+
+Fournis l'ensemble sous la forme d’un script SQL prêt à être exécuté.
+```
+
+### Ce que l’IA a renvoyé
+
+Résultat obtenu stocké dans le fichier : 
+ [3_insertion.sql](./3_insertion.sql)
+
+## V. Cinquième étape : interrogation de la BD
+
+Scénario : le head coach de la Karmine Corp prépare le roster de la saison 2027. Il scout les joueurs du monde entier, compare les équipes adverses et analyse leurs points forts pour préparer les futurs matchs.
+
