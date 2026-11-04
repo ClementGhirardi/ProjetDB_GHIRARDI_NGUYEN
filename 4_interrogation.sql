@@ -1,0 +1,191 @@
+USE LOL_ESPORT;
+
+-- Premières requêtes
+-- Tournois triés par dotation décroissante
+SELECT NOM_TOURNOI, DOTATION
+    FROM TOURNOI
+        ORDER BY DOTATION DESC;
+
+-- Tournois qui se déroulent en été
+SELECT *
+    FROM TOURNOI
+        WHERE NOM_TOURNOI LIKE '%summer%';
+
+-- Tournois européens
+SELECT *
+    FROM TOURNOI
+        WHERE REGION_TOURNOI = 'EMEA';
+
+-- Joueurs triés par age croissant
+SELECT *, TIMESTAMPDIFF(YEAR, DATE_NAISS_JOUEUR, CURDATE()) AS AGE
+    FROM JOUEUR
+        ORDER BY DATE_NAISS_JOUEUR DESC;
+
+-- Nationalités des joueurs sans doublon
+SELECT DISTINCT NATIONALITE_JOUEUR
+    FROM JOUEUR;
+
+-- Joueurs de moins de 25ans en 2026
+SELECT *
+    FROM JOUEUR
+        WHERE DATE_NAISS_JOUEUR BETWEEN '2001-01-01' AND '2008-01-01';
+
+-- Joueurs européens
+SELECT *
+    FROM JOUEUR
+        WHERE NATIONALITE_JOUEUR IN ('Espagne', 'Portugal', 'Serbie', 'Danemark', 'France', 'Pologne', 'Ukraine', 'Belgique', 'Grèce', 'Bulgarie', 'Allemagne', 'Suède', 'Slovénie');
+
+
+
+-- Deuxièmes requêtes
+-- Age moyen des joueurs
+SELECT AVG(TIMESTAMPDIFF(YEAR, DATE_NAISS_JOUEUR, CURDATE())) AS AGE_MOYEN
+    FROM JOUEUR;
+
+-- Nationalité la plus présente
+SELECT NATIONALITE_JOUEUR, COUNT(*) AS NB_JOUEURS
+    FROM JOUEUR
+        GROUP BY NATIONALITE_JOUEUR
+        ORDER BY NB_JOUEURS DESC;
+
+-- Nombre de tournois par région
+SELECT REGION_TOURNOI, COUNT(*) AS NB_TOURNOIS
+    FROM TOURNOI
+        GROUP BY REGION_TOURNOI
+        ORDER BY NB_TOURNOIS DESC;
+
+-- Région ayant organisé plus de 3 tournois
+SELECT REGION_TOURNOI, COUNT(*) AS NB_TOURNOIS
+    FROM TOURNOI
+        GROUP BY REGION_TOURNOI
+        HAVING COUNT(*) >= 3;
+
+-- Nombre maximal de kill effectuer par chaque joueur dans chaque tournoi
+SELECT J.PSEUDO_JOUEUR, T.NOM_TOURNOI, MAX(JR.NB_KILLS) AS MAX_KILLS
+    FROM JOUEUR J
+    JOIN JOUER JR ON J.ID_JOUEUR = JR.ID_JOUEUR
+    JOIN AFFRONTEMENT A ON JR.ID_AFFRONTEMENT = A.ID_AFFRONTEMENT
+    JOIN TOURNOI T ON A.ID_TOURNOI = T.ID_TOURNOI
+        GROUP BY J.ID_JOUEUR, J.PSEUDO_JOUEUR, T.ID_TOURNOI, T.NOM_TOURNOI
+        ORDER BY T.NOM_TOURNOI, MAX_KILLS DESC;
+
+
+-- Troisièmes requêtes
+-- Roster actuel de la KC
+SELECT J.PSEUDO_JOUEUR, AF.ROLE_JOUEUR
+    FROM JOUEUR J
+    JOIN AFFECTER AF ON J.ID_JOUEUR = AF.ID_JOUEUR
+    JOIN EQUIPE E ON AF.ID_EQUIPE = E.ID_EQUIPE
+        WHERE E.TAG_EQUIPE = 'KC';
+
+-- Tournois auxquels ont participé la KC
+SELECT DISTINCT T.NOM_TOURNOI
+    FROM TOURNOI T
+    JOIN PARTICIPER P ON T.ID_TOURNOI = P.ID_TOURNOI
+    JOIN EQUIPE E ON P.ID_EQUIPE = E.ID_EQUIPE
+        WHERE E.NOM_EQUIPE LIKE '%Karmine Corp%';
+
+-- Champions joués par les joueurs de la KC
+SELECT DISTINCT .PSEUDO_JOUEUR, C.NOM_CHAMPION
+    FROM EQUIPE E
+    JOIN AFFECTER AF ON E.ID_EQUIPE = AF.ID_EQUIPE
+    JOIN JOUEUR J ON AF.ID_JOUEUR = J.ID_JOUEUR
+    JOIN JOUER JR ON J.ID_JOUEUR = JR.ID_JOUEUR
+    JOIN CHAMPION C ON JR.ID_CHAMPION = C.ID_CHAMPION
+        WHERE E.TAG_EQUIPE = 'KC'
+        ORDER BY J.PSEUDO_JOUEUR, C.NOM_CHAMPION;
+
+-- Affrontements remportés par la KC
+SELECT A.ID_AFFRONTEMENT, ADV.NOM_EQUIPE AS EQUIPE_ADVERSE, A.SCORE_EQUIPE1, A.SCORE_EQUIPE2
+    FROM EQUIPE KC
+    JOIN DISPUTER D1 ON KC.ID_EQUIPE = D1.ID_EQUIPE
+    JOIN AFFRONTEMENT A ON D1.ID_AFFRONTEMENT = A.ID_AFFRONTEMENT
+    JOIN DISPUTER D2 ON A.ID_AFFRONTEMENT = D2.ID_AFFRONTEMENT
+    JOIN EQUIPE ADV ON D2.ID_EQUIPE = ADV.ID_EQUIPE
+        WHERE KC.TAG_EQUIPE = 'KC'
+            AND D1.NUM_EQUIPE <> D2.NUM_EQUIPE
+            AND A.STATUT_AFFRONTEMENT = 'TERMINE'
+            AND (
+                (D1.NUM_EQUIPE = 1 AND A.SCORE_EQUIPE1 > A.SCORE_EQUIPE2)
+                OR (D1.NUM_EQUIPE = 2 AND A.SCORE_EQUIPE2 > A.SCORE_EQUIPE1)
+            )
+        ORDER BY A.DATE_HEURE_AFFRONTEMENT DESC;
+
+-- Classement des équipes selon leur nombre de victoires lors d'affrontements
+SELECT E.NOM_EQUIPE, COUNT(*) AS NB_VICTOIRES
+    FROM EQUIPE E
+    JOIN DISPUTER D ON E.ID_EQUIPE = D.ID_EQUIPE
+    JOIN AFFRONTEMENT A ON D.ID_AFFRONTEMENT = A.ID_AFFRONTEMENT
+        WHERE A.STATUT_AFFRONTEMENT = 'TERMINE'
+            AND (
+                (D.NUM_EQUIPE = 1 AND A.SCORE_EQUIPE1 > A.SCORE_EQUIPE2)
+                OR (D.NUM_EQUIPE = 2 AND A.SCORE_EQUIPE2 > A.SCORE_EQUIPE1)
+            )
+        GROUP BY E.ID_EQUIPE, E.NOM_EQUIPE
+        ORDER BY NB_VICTOIRES DESC;
+
+-- Classement des équipes selon leur nombre de tournois remportés
+SELECT E.NOM_EQUIPE, COUNT(DISTINCT V.ID_TOURNOI) AS NB_VICTOIRES
+    FROM EQUIPE E
+    LEFT JOIN (
+        SELECT D.ID_EQUIPE, A.ID_TOURNOI
+            FROM DISPUTER D
+            JOIN AFFRONTEMENT A ON D.ID_AFFRONTEMENT = A.ID_AFFRONTEMENT
+                WHERE A.PHASE_AFFRONTEMENT = 'FINALE'
+                    AND A.STATUT_AFFRONTEMENT = 'TERMINE'
+                    AND (
+                        (D.NUM_EQUIPE = 1 AND A.SCORE_EQUIPE1 > A.SCORE_EQUIPE2)
+                        OR (D.NUM_EQUIPE = 2 AND A.SCORE_EQUIPE2 > A.SCORE_EQUIPE1)
+                    )
+    ) V ON E.ID_EQUIPE = V.ID_EQUIPE
+        GROUP BY E.ID_EQUIPE, E.NOM_EQUIPE
+        ORDER BY NB_VICTOIRES DESC;
+
+-- Quatrième requêtes
+-- Equipes ayant déjà participées aux worlds
+SELECT NOM_EQUIPE
+FROM EQUIPE
+WHERE ID_EQUIPE IN (
+    SELECT ID_EQUIPE
+    FROM PARTICIPER
+    WHERE ID_TOURNOI IN (
+        SELECT ID_TOURNOI
+        FROM TOURNOI
+        WHERE NOM_TOURNOI LIKE '%World%'
+    )
+);
+
+-- Joueurs ayant déjà joué une partie
+SELECT PSEUDO_JOUEUR
+FROM JOUEUR J
+WHERE EXISTS (
+    SELECT *
+    FROM JOUER JR
+    WHERE JR.ID_JOUEUR = J.ID_JOUEUR
+);
+
+-- Tournois ayant une dotation supérieure à au moins un autre tournoi
+SELECT NOM_TOURNOI, DOTATION
+FROM TOURNOI
+WHERE DOTATION > ANY (
+    SELECT DOTATION
+    FROM TOURNOI
+);
+
+-- Tournois ayant la dotation maximale
+SELECT NOM_TOURNOI, DOTATION
+FROM TOURNOI
+WHERE DOTATION >= ALL (
+    SELECT DOTATION
+    FROM TOURNOI
+);
+
+-- Tournois qui ont déjà commencés
+SELECT NOM_TOURNOI
+FROM TOURNOI T
+WHERE EXISTS (
+    SELECT *
+    FROM AFFRONTEMENT A
+    WHERE A.ID_TOURNOI = T.ID_TOURNOI
+    AND A.STATUT_AFFRONTEMENT = 'TERMINE'
+);

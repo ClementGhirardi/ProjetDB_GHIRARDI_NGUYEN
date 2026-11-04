@@ -140,7 +140,7 @@ Remplis la base de donnée en utilisant des données existantes. Il faut :
 - Au moins 10 affrontements par tournoi
 - Toutes les parties que contiennent ces affrontements avec pour chaque partie toutes les données NB_KILLS, NB_DEATHS, NB_ASSISTS, NATURE_BAN_PICK
 - Tout les champions du jeu League of Legends
-Ajoute également quelques données concernant les années précédents 2026 (entre 2020 et 2026). Il ne faut pas plus de 1000 lignes au total.
+Ajoute également quelques données concernant les années précédents 2026 (entre 2020 et 2026). Il ne faut pas plus de 2000 lignes au total.
 
 Les clés étrangères doivent faire référence aux clés primaires existantes : donne les lignes en commençant par remplir les tables dans lesquelles il n'y a pas de clés étrangères, puis les tables dans lesquelles les clés étrangères font références à des clés primaires des tables déjà remplies. 
 
