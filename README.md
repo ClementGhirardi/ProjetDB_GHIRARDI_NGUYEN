@@ -216,5 +216,42 @@ Résultat obtenu stocké dans le fichier :
 
 ## V. Cinquième étape : interrogation de la BD
 
-Scénario : le head coach de la Karmine Corp prépare le roster de la saison 2027. Il scout les joueurs du monde entier, compare les équipes adverses et analyse leurs points forts pour préparer les futurs matchs.
+Scénario : le head coach de la Karmine Corp prépare le roster de la saison 2027. Il scout les joueurs du monde entier, compare les équipes adverses et analyse leurs joueurs pour préparer les futurs matchs.
 
+Les requêtes sont disponibles dans la fichier [4_interrogation.sql](./4_interrogation.sql)
+
+Interessons nous à la requête permettant de connaitre les champions joués par les joueurs de la KC.
+
+La première requête proposée est :  
+``` SQL
+SELECT DISTINCT J.PSEUDO_JOUEUR, C.NOM_CHAMPION
+    FROM EQUIPE AS E
+    JOIN AFFECTER AS AF ON E.ID_EQUIPE = AF.ID_EQUIPE
+    JOIN JOUEUR AS J ON AF.ID_JOUEUR = J.ID_JOUEUR
+    JOIN JOUER AS JR ON J.ID_JOUEUR = JR.ID_JOUEUR
+    JOIN CHAMPION AS C ON JR.ID_CHAMPION = C.ID_CHAMPION
+        WHERE E.TAG_EQUIPE = 'KC'
+        ORDER BY J.PSEUDO_JOUEUR, C.NOM_CHAMPION;
+```  
+
+![alt_text](./imgs/result0.jpg)
+*Arbre relationnels de la requête précédente*
+
+On a 24+120+120+120+400+400+169+400+10+10+10 = 1783 rows au total
+
+La seconde requête proposée est : 
+``` SQL
+SELECT DISTINCT J.PSEUDO_JOUEUR, C.NOM_CHAMPION
+    FROM (SELECT * FROM EQUIPE WHERE EQUIPE.TAG_EQUIPE = 'KC') AS E
+    JOIN AFFECTER AS AF ON E.ID_EQUIPE = AF.ID_EQUIPE
+    JOIN JOUEUR AS J ON AF.ID_JOUEUR = J.ID_JOUEUR
+    JOIN JOUER AS JR ON J.ID_JOUEUR = JR.ID_JOUEUR
+    JOIN CHAMPION AS C ON JR.ID_CHAMPION = C.ID_CHAMPION
+        
+        ORDER BY J.PSEUDO_JOUEUR, C.NOM_CHAMPION;
+```  
+
+![alt_text](./imgs/result1.jpg)
+*Arbre relationnels de la requête précédente*
+
+On a 10+10+10+10+169+5+400+169+5+120+400+1+120+120+1+120+24 = 1694 rows au total.
