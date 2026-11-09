@@ -222,7 +222,13 @@ Les requêtes sont disponibles dans la fichier [4_interrogation.sql](./4_interro
 
 Interessons nous à la requête permettant de connaitre les champions joués par les joueurs de la KC.
 
-La première requête proposée est :  
+Elle utilise trois opérateurs différents : la **sélection (σ)**, la **jointure (⋈)**, la **projection (π)** et le **tri (τ)**.
+
+### 1. Plan d'exécution initial
+
+Dans ce premier plan, les jointures sont effectuées avant la sélection de l'équipe KC.
+
+La requête SQL est la suivante :  
 ``` SQL
 SELECT DISTINCT J.PSEUDO_JOUEUR, C.NOM_CHAMPION
     FROM EQUIPE AS E
@@ -235,11 +241,29 @@ SELECT DISTINCT J.PSEUDO_JOUEUR, C.NOM_CHAMPION
 ```  
 
 ![alt_text](./imgs/result0.jpg)
-*Arbre relationnels de la requête précédente*
+*Arbre relationnel de la requête ci-dessus*
 
-On a 24+120+120+120+400+400+169+400+10+10+10 = 1783 rows au total
+**Calcul du coût :**
 
-La seconde requête proposée est : 
+En considérant une jointure par boucles imbriquées (produit des cardinalités en entrée), une comparaison par ligne pour la sélection et deux opérations par ligne pour la projection :
+
+| Opération | Calcul du coût | Coût |
+|---|---:|---:|
+| E ⋈ AF | $24 * 120$ | $1 880$ |
+| Table précédente ⋈ J | $120 * 120$ | $14 400$ |
+| Table précédente ⋈ JR | $120 * 400$ | $48 000$ |
+| Table précédente ⋈ C | $400 * 169$ | $67 700$ |
+| σ Table précédente | $400$ | $400$ | 
+| π Table précédente | $10$ | $10$ |
+| τ tri résultat | $10 \log_2(10)$ | $33$ |
+| Total || $132 423$ |
+
+
+### 2. Plan d'exécution optimisé
+
+Dans le deuxième plan, la sélection est effectuée dès le départ sur la table EQUIPE. Cela permet de réduire le nombre de lignes avant les jointures.
+
+La requête SQL est la suivante :  
 ``` SQL
 SELECT DISTINCT J.PSEUDO_JOUEUR, C.NOM_CHAMPION
     FROM (SELECT * FROM EQUIPE WHERE EQUIPE.TAG_EQUIPE = 'KC') AS E
@@ -247,11 +271,26 @@ SELECT DISTINCT J.PSEUDO_JOUEUR, C.NOM_CHAMPION
     JOIN JOUEUR AS J ON AF.ID_JOUEUR = J.ID_JOUEUR
     JOIN JOUER AS JR ON J.ID_JOUEUR = JR.ID_JOUEUR
     JOIN CHAMPION AS C ON JR.ID_CHAMPION = C.ID_CHAMPION
-        
         ORDER BY J.PSEUDO_JOUEUR, C.NOM_CHAMPION;
-```  
+``` 
 
 ![alt_text](./imgs/result1.jpg)
-*Arbre relationnels de la requête précédente*
+*Arbre relationnel de la requête ci-dessus*
 
-On a 10+10+10+10+169+5+400+169+5+120+400+1+120+120+1+120+24 = 1694 rows au total.
+**Calcul du coût :**
+
+| Opération | Calcul du coût | Coût |
+|---|---:|---:|
+| σ EQUIPE| $24$ | $24$ | 
+| Table précédente ⋈ AF | $1 * 120$ | $120$ |
+| Table précédente ⋈ J | $5 * 120$ | $600$ |
+| Table précédente ⋈ JR | $5 * 400$ | $2 000$ |
+| Table précédente ⋈ C | $10 * 169$ | $1 690$ |
+| π Table précédente | $10$ | $10$ |
+| τ tri résultat | $10 \log_2(10)$ | $33$ |
+| Total || $4 477$ |
+
+
+Le deuxième plan est nettement plus performant.
+
+Cette différence s'explique par le fait que la sélection est effectuée avant les jointures. Elle réduit immédiatement la table EQUIPE de 24 à 1 ligne, ce qui diminue la taille des relations intermédiaires.
